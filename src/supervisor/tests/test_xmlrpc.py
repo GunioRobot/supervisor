@@ -190,6 +190,14 @@ class TesstSupervisorTransport(unittest.TestCase):
         self.assertEqual(conn.host, '127.0.0.1')
         self.assertEqual(conn.port, 443)
 
+    def test_https_schema_fails_when_httplib_lacks_ssl(self):
+        import httplib
+        https_cls = httplib.HTTPSConnection
+        httplib.__dict__.pop('HTTPSConnection')
+        self.assertRaises(ValueError, self._makeOne, 'user', 'pass',
+                          'https://127.0.0.1/')
+        httplib.HTTPSConnection = https_cls
+
     def test_request_non_200_response(self):
         import xmlrpclib
         transport = self._makeOne('user', 'pass', 'http://127.0.0.1/')
