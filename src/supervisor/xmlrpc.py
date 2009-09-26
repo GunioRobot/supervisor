@@ -422,16 +422,13 @@ class SupervisorTransport(xmlrpclib.Transport):
         self.verbose = False
         self.serverurl = serverurl
         if serverurl.startswith('http://'):
-            type, uri = urllib.splittype(serverurl)
-            host, path = urllib.splithost(uri)
-            host, port = urllib.splitport(host)
-            if port is None:
-                port = 80
-            else:
-                port = int(port)
-            def get_connection(host=host, port=port):
-                return httplib.HTTPConnection(host, port)
-            self._get_connection = get_connection
+            self._set_http_conn_getter(httplib.HTTPConnection)
+        elif serverurl.startswith('https://'):
+            if not hasattr(httplib, 'HTTPSConnection'):
+                raise ValueError('https protocol selected but the interpreter '
+                                 'at %s does not have ssl support'
+                                 % sys.executable)
+            self._set_http_conn_getter(httplib.HTTPSConnection)
         elif serverurl.startswith('unix://'):
             def get_connection(serverurl=serverurl):
                 # we use 'localhost' here because domain names must be
@@ -442,6 +439,21 @@ class SupervisorTransport(xmlrpclib.Transport):
             self._get_connection = get_connection
         else:
             raise ValueError('Unknown protocol for serverurl %s' % serverurl)
+
+    def _set_http_conn_getter(self, http_conn_cls):
+        type, uri = urllib.splittype(self.serverurl)
+        host, path = urllib.splithost(uri)
+        host, port = urllib.splitport(host)
+        if port is None:
+            if http_conn_cls.__name__.lower().startswith('https'):
+                port = 443
+            else:
+                port = 80
+        else:
+            port = int(port)
+        def get_connection(host=host, port=port):
+            return http_conn_cls(host, port)
+        self._get_connection = get_connection
 
     def request(self, host, handler, request_body, verbose=0):
         if not self.connection:

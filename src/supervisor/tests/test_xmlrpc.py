@@ -162,6 +162,16 @@ class TesstSupervisorTransport(unittest.TestCase):
         self.assertEqual(conn.host, '127.0.0.1')
         self.assertEqual(conn.port, 9001)
 
+    def test__get_connection_https_9001(self):
+        import httplib
+        if not hasattr(httplib, 'HTTPSConnection'):
+            return
+        transport = self._makeOne('user', 'pass', 'https://127.0.0.1:9001/')
+        conn = transport._get_connection()
+        self.failUnless(isinstance(conn, httplib.HTTPSConnection))
+        self.assertEqual(conn.host, '127.0.0.1')
+        self.assertEqual(conn.port, 9001)
+
     def test__get_connection_http_80(self):
         import httplib
         transport = self._makeOne('user', 'pass', 'http://127.0.0.1/')
@@ -169,6 +179,16 @@ class TesstSupervisorTransport(unittest.TestCase):
         self.failUnless(isinstance(conn, httplib.HTTPConnection))
         self.assertEqual(conn.host, '127.0.0.1')
         self.assertEqual(conn.port, 80)
+
+    def test__get_connection_https_443(self):
+        import httplib
+        if not hasattr(httplib, 'HTTPSConnection'):
+            return
+        transport = self._makeOne('user', 'pass', 'https://127.0.0.1/')
+        conn = transport._get_connection()
+        self.failUnless(isinstance(conn, httplib.HTTPSConnection))
+        self.assertEqual(conn.host, '127.0.0.1')
+        self.assertEqual(conn.port, 443)
 
     def test_request_non_200_response(self):
         import xmlrpclib
